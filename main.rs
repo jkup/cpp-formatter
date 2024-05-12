@@ -7,26 +7,38 @@ fn main() {
     v8::V8::initialize_platform(platform.into());
     v8::V8::initialize();
 
-    let isolate = &mut v8::Isolate::new(Default::default());
+    // Create a new isolate (i.e., a V8 execution environment).
+    let mut isolate = v8::Isolate::new(v8::CreateParams::default());
 
-    // Read the input file.
+    // Read the JavaScript code from the input file.
     let code = fs::read_to_string("input.js").expect("Unable to read file");
 
-    // Compile and run the script.
-    let scope = &mut v8::HandleScope::new(isolate);
-    let context = v8::Context::new(scope);
-    let scope = &mut v8::ContextScope::new(scope, context);
-    let code = v8::String::new(scope, &code).unwrap();
-    let script = v8::Script::compile(scope, code, None).unwrap();
-    let result = script.run(scope).unwrap();
+    // Create a handle scope to manage the memory for V8 handles.
+    let handle_scope = &mut v8::HandleScope::new(&mut isolate);
 
-    // Convert the result to a string and print it.
-    let result = result.to_string(scope).unwrap();
-    println!("{}", result.to_rust_string_lossy(scope));
-    
+    // Create a new context (i.e., the global object) for the JavaScript code.
+    let context = v8::Context::new(handle_scope);
+    let context_scope = &mut v8::ContextScope::new(handle_scope, context);
+
+    // Convert the Rust string to a V8 string value.
+    let code_string = v8::String::new(context_scope, &code).unwrap();
+
+    // Compile the JavaScript code.
+    let script = v8::Script::compile(context_scope, code_string, None).unwrap();
+
+    // Run the script and get the result.
+    let result = script.run(context_scope).unwrap();
+
+    // Convert the result to a string.
+    let result_string = result.to_string(context_scope).unwrap();
+    let rust_string = result_string.to_rust_string_lossy(context_scope);
+
+    // Print the result.
+    println!("{}", rust_string);
+
+    // Dispose the V8 instance and shutdown the platform properly.
     unsafe {
         v8::V8::dispose();
     }
-    
     v8::V8::shutdown_platform();
 }
