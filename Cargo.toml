@@ -1,0 +1,11 @@
+[package]
+name = "cpp-formatter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rusty_v8 = "0.26.0"
+
+[[bin]]
+name = "cpp-formatter"
+path = "main.rs"
